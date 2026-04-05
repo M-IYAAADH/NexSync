@@ -1,0 +1,33 @@
+{
+  "name": "@opensync/core",
+  "version": "0.1.0",
+  "description": "Offline-first sync primitive — local store, CRDT, offline queue, WebSocket sync",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc --project tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@automerge/automerge": "^2.2.0",
+    "idb-keyval": "^6.2.1",
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "vitest": "^1.4.0"
+  },
+  "files": ["dist"],
+  "license": "MIT"
+}
