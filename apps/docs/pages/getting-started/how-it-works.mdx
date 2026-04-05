@@ -1,0 +1,87 @@
+---
+title: How It Works
+---
+
+# How It Works
+
+Synclite is built on three ideas: **instant local writes**, **append-only operation logs**, and **last-write-wins conflict resolution**.
+
+## The Data Flow
+
+```
+Your App
+  │
+  │ db.set('note:1', { title: 'Hello' })
+  ▼
+Local Store (IndexedDB / AsyncStorage / SQLite)  ← instant, < 5ms
+  │
+  │ WebSocket (when online)
+  ▼
+Relay Server  ← stores op in SQLite log, fans out to all connected clients
+  │
+  ▼
+Other Clients  ← receive the op and apply it to their local store
+```
+
+## Operations, Not Snapshots
+
+Every write creates an **Operation** — an immutable record of what changed:
+
+```typescript
+{
+  id: 'uuid-v4',
+  type: 'set',           // or 'delete'
+  key: 'note:1',
+  value: { title: 'Hello' },
+  timestamp: 42,         // Lamport logical clock
+  deviceId: 'device-abc',
+  synced: false,         // true once relay confirms
+}
+```
+
+The relay stores every operation forever. When a client reconnects after being offline, it sends `{ type: 'sync', since: <last-timestamp> }` and the relay replays every op it missed.
+
+## Conflict Resolution
+
+When two clients edit the same key at the same time (both offline), both operations get synced. Synclite resolves them deterministically:
+
+1. **Delete wins** — a delete always beats a concurrent set
+2. **Last-Write-Wins** — higher Lamport timestamp wins
+3. **Tie-break** — if timestamps are equal, higher `deviceId` string wins
+
+This means all clients converge to the same state, regardless of the order ops arrive.
+
+## Offline Queue
+
+```
+Offline:
+  db.set('key', value)
+    → writes to IndexedDB immediately
+    → adds op to pending queue
+    → does NOT send to relay (no connection)
+
+Reconnect:
+  → flushes queue: sends all pending ops to relay in order
+  → relay broadcasts to other clients
+  → relay confirms: marks ops as synced
+```
+
+The queue survives page reloads — it's stored in the same IndexedDB as the values.
+
+## WebSocket Protocol
+
+```
+Client                      Relay
+  │                           │
+  │── connect ──────────────► │
+  │── auth { appId, token } ► │
+  │◄── auth:ok { deviceId } ──│
+  │                           │
+  │── ops [ op1, op2 ] ─────► │ ← flush queue
+  │── sync { since: 0 } ────► │ ← catch up on missed ops
+  │◄── ops [ op3, op4 ] ──────│ ← missed ops from other clients
+  │◄── sync:complete ─────────│
+  │                           │
+  │── ops [ op5 ] ──────────► │ ← new local write
+  │◄── ops [ op5 ] ───────────│ ← broadcast to other clients
+```

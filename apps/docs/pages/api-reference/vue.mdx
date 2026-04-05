@@ -1,0 +1,54 @@
+---
+title: '@synclite/vue'
+---
+
+# @synclite/vue
+
+Vue 3 composables for Synclite. All composables return reactive `Ref` values.
+
+## `createSynclite(config)`
+
+```typescript
+function createSynclite(config: SyncliteConfig): Plugin
+```
+
+Create a Vue plugin. Install with `app.use()`.
+
+```ts
+app.use(createSynclite({ relay: 'wss://...', appId: 'my-app' }))
+```
+
+## `useSyncliteSetup(config)`
+
+```typescript
+function useSyncliteSetup(config: SyncliteConfig): Synclite
+```
+
+Set up Synclite inside a root component and provide it to descendants.
+Call this instead of `createSynclite()` when you want Synclite scoped to a component subtree.
+
+## `useSynclite()`
+
+```typescript
+function useSynclite(): Synclite
+```
+
+Access the Synclite instance from any descendant component.
+
+## `useValue(key)`
+
+```typescript
+function useValue(key: string): Ref<Record<string, unknown> | null>
+```
+
+## `useQuery(prefix)`
+
+```typescript
+function useQuery(prefix: string): Ref<Record<string, Record<string, unknown>>>
+```
+
+## `useStatus()`
+
+```typescript
+function useStatus(): Ref<'connecting' | 'connected' | 'offline' | 'syncing'>
+```

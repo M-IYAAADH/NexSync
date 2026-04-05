@@ -1,0 +1,5 @@
+{
+  "core": "@synclite/core",
+  "react": "@synclite/react",
+  "vue": "@synclite/vue"
+}

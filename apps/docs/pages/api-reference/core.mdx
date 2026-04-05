@@ -1,0 +1,147 @@
+---
+title: '@synclite/core'
+---
+
+# @synclite/core
+
+The main Synclite client. Works in browser (IndexedDB), Node.js (SQLite/Memory), and React Native (AsyncStorage via `@synclite/react-native`).
+
+## `new Synclite(config)`
+
+```typescript
+import { Synclite } from '@synclite/core'
+
+const db = new Synclite({
+  relay: 'wss://relay.example.com',  // Required (unless offline: true)
+  appId: 'my-app',                   // Namespace. Default: 'default'
+  userId: 'user-123',                // Optional. Stored on every op.
+  token: 'jwt-token',                // Optional. Sent to relay on connect.
+  offline: false,                    // Allow no relay. Default: false
+  storage: 'indexeddb',              // 'indexeddb' | 'sqlite' | 'memory'
+  syncInterval: 30000,               // Background sync ms. Default: 30000
+  debug: false,                      // Verbose logs. Default: false
+})
+```
+
+## Methods
+
+### `db.set(key, value)`
+
+Write a value. Instant locally, queued for sync.
+
+```typescript
+db.set('note:1', { title: 'Hello', body: 'World' })
+```
+
+### `db.get(key)`
+
+Read the current value for a key.
+
+```typescript
+const note = await db.get('note:1')
+// Record<string, unknown> | null
+```
+
+### `db.delete(key)`
+
+Delete a key. Delete wins over any concurrent set.
+
+```typescript
+db.delete('note:1')
+```
+
+### `db.batch(items)`
+
+Execute multiple operations atomically.
+
+```typescript
+db.batch([
+  { op: 'set', key: 'note:1', value: { title: 'A' } },
+  { op: 'set', key: 'note:2', value: { title: 'B' } },
+  { op: 'delete', key: 'note:3' },
+])
+```
+
+### `db.query(prefix)`
+
+Return all key-value pairs whose keys start with `prefix`.
+
+```typescript
+const notes = await db.query('note:')
+// { 'note:1': { title: 'A' }, 'note:2': { title: 'B' } }
+```
+
+### `db.subscribe(key, callback)`
+
+Subscribe to a single key. Fires immediately with the current value, then on every change.
+
+```typescript
+const unsub = db.subscribe('note:1', (value) => {
+  console.log('note:1 changed:', value)
+})
+// Later:
+unsub()
+```
+
+### `db.subscribePrefix(prefix, callback)`
+
+Subscribe to all keys under a prefix. Fires with an array of changes.
+
+```typescript
+const unsub = db.subscribePrefix('note:', (changes) => {
+  for (const { key, value, deleted } of changes) {
+    console.log(key, deleted ? 'deleted' : value)
+  }
+})
+```
+
+### `db.sync()`
+
+Trigger an immediate sync with the relay.
+
+```typescript
+await db.sync()
+```
+
+### `db.disconnect()`
+
+Close the relay connection and stop all timers.
+
+```typescript
+db.disconnect()
+```
+
+### `db.pendingOps()`
+
+Return the count of operations not yet confirmed by the relay.
+
+```typescript
+const count = await db.pendingOps()
+```
+
+## Properties
+
+### `db.status`
+
+Current connection status: `'connecting' | 'connected' | 'offline' | 'syncing'`
+
+### `db.onStatusChange(callback)`
+
+Subscribe to status changes. Returns an unsubscribe function.
+
+```typescript
+const unsub = db.onStatusChange((status) => {
+  console.log('status:', status)
+})
+```
+
+## Events
+
+```typescript
+db.on('connected', () => {})
+db.on('disconnected', () => {})
+db.on('sync:start', () => {})
+db.on('sync:complete', ({ ops }) => {})
+db.on('sync:error', (err) => {})
+db.on('conflict:resolved', ({ key, winner }) => {})
+```

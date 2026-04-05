@@ -1,0 +1,97 @@
+---
+title: Self-Hosting the Relay
+---
+
+import { Callout, Tabs, Tab } from 'nextra/components'
+
+# Self-Hosting the Relay
+
+The Synclite relay is a lightweight Node.js process backed by SQLite. You own your data.
+
+## Quick Start (local dev)
+
+```bash
+npx @synclite/cli relay dev
+# Relay running → ws://localhost:8080
+```
+
+## Docker
+
+```dockerfile
+FROM node:20-alpine
+WORKDIR /app
+RUN npm install -g @synclite/relay
+EXPOSE 8080
+CMD ["synclite-relay"]
+```
+
+```bash
+docker run -p 8080:8080 \
+  -e JWT_SECRET=your-secret \
+  -v ./data:/app/data \
+  my-synclite-relay
+```
+
+## Environment Variables
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `8080` | WebSocket server port |
+| `DATABASE_PATH` | `./relay.db` | SQLite file path |
+| `JWT_SECRET` | — | Enables JWT auth. Leave unset to allow unauthenticated connections (dev only). |
+| `AUTH_WEBHOOK` | — | URL for custom auth hook. |
+| `LOG_LEVEL` | `info` | `debug` \| `info` \| `warn` \| `error` |
+
+## Deploy
+
+<Tabs items={['Fly.io', 'Railway', 'Render']}>
+  <Tab>
+    ```bash
+    synclite relay deploy --platform fly
+    ```
+    Or manually:
+    ```bash
+    fly launch --name my-synclite-relay
+    fly secrets set JWT_SECRET=$(openssl rand -hex 32)
+    fly volumes create relay_data --size 1
+    fly deploy
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    synclite relay deploy --platform railway
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    synclite relay deploy --platform render
+    ```
+  </Tab>
+</Tabs>
+
+## Auth
+
+### JWT (recommended)
+
+Set `JWT_SECRET` on the relay. Pass `token: jwt` in the client config:
+
+```ts
+const db = new Synclite({
+  relay: 'wss://my-relay.fly.dev',
+  token: userJwt,
+})
+```
+
+The relay verifies the token on connect. Invalid tokens are rejected immediately.
+
+### Webhook
+
+Set `AUTH_WEBHOOK=https://your-backend.com/verify`. The relay will POST the token to your backend and expect `{ ok: true, userId: '...' }` or `{ ok: false, reason: '...' }`.
+
+### Open (dev only)
+
+Leave both `JWT_SECRET` and `AUTH_WEBHOOK` unset. All connections are accepted. **Never use this in production.**
+
+<Callout type="warning">
+  Always use `wss://` (TLS) in production. The relay will warn on `ws://` connections if `NODE_ENV=production`.
+</Callout>

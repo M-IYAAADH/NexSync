@@ -39,6 +39,11 @@ export type SyncliteConfig = {
   syncInterval?: number
   /** Emit verbose debug logs. Defaults to false. */
   debug?: boolean
+  /**
+   * Provide a custom LocalStore instance (e.g. AsyncStorageStore for React Native).
+   * When set, this overrides the `storage` option.
+   */
+  storeInstance?: LocalStore
 }
 
 /** A single operation in a batch write. */

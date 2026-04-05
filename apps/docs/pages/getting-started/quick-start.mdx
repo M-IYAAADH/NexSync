@@ -1,0 +1,163 @@
+---
+title: Quick Start
+---
+
+import { Callout, Steps, Tabs, Tab } from 'nextra/components'
+
+# Quick Start
+
+Get offline-first sync running in your app in under 5 minutes.
+
+<Steps>
+
+### Install
+
+<Tabs items={['React', 'Vue', 'React Native', 'Vanilla JS']}>
+  <Tab>
+    ```bash
+    npm install @synclite/core @synclite/react
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    npm install @synclite/core @synclite/vue
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    npm install @synclite/core @synclite/react-native @react-native-async-storage/async-storage
+    ```
+  </Tab>
+  <Tab>
+    ```bash
+    npm install @synclite/core
+    ```
+  </Tab>
+</Tabs>
+
+### Start a local relay
+
+```bash
+npx @synclite/cli relay dev
+# Relay running → ws://localhost:8080
+```
+
+### Wrap your app
+
+<Tabs items={['React', 'Vue', 'React Native', 'Vanilla JS']}>
+  <Tab>
+    ```tsx
+    // app.tsx
+    import { SyncliteProvider } from '@synclite/react'
+
+    export default function App() {
+      return (
+        <SyncliteProvider relay="ws://localhost:8080" appId="my-app">
+          <MyApp />
+        </SyncliteProvider>
+      )
+    }
+    ```
+  </Tab>
+  <Tab>
+    ```ts
+    // main.ts
+    import { createApp } from 'vue'
+    import { createSynclite } from '@synclite/vue'
+    import App from './App.vue'
+
+    createApp(App)
+      .use(createSynclite({ relay: 'ws://localhost:8080', appId: 'my-app' }))
+      .mount('#app')
+    ```
+  </Tab>
+  <Tab>
+    ```tsx
+    // App.tsx
+    import { SyncliteProvider } from '@synclite/react-native'
+
+    export default function App() {
+      return (
+        <SyncliteProvider relay="ws://localhost:8080" appId="my-app">
+          <MyApp />
+        </SyncliteProvider>
+      )
+    }
+    ```
+  </Tab>
+  <Tab>
+    ```ts
+    import { Synclite } from '@synclite/core'
+
+    const db = new Synclite({
+      relay: 'ws://localhost:8080',
+      appId: 'my-app',
+    })
+    ```
+  </Tab>
+</Tabs>
+
+### Read and write data
+
+<Tabs items={['React', 'Vue', 'Vanilla JS']}>
+  <Tab>
+    ```tsx
+    import { useSynclite, useValue } from '@synclite/react'
+
+    function NoteEditor() {
+      const db = useSynclite()
+      const note = useValue('note:1')
+
+      return (
+        <input
+          value={String(note?.title ?? '')}
+          onChange={(e) => db.set('note:1', { title: e.target.value })}
+        />
+      )
+    }
+    ```
+  </Tab>
+  <Tab>
+    ```vue
+    <script setup lang="ts">
+    import { useSynclite, useValue } from '@synclite/vue'
+
+    const db = useSynclite()
+    const note = useValue('note:1')
+    </script>
+
+    <template>
+      <input
+        :value="note?.title ?? ''"
+        @input="db.set('note:1', { title: ($event.target as HTMLInputElement).value })"
+      />
+    </template>
+    ```
+  </Tab>
+  <Tab>
+    ```ts
+    // Write — instant, queued for sync
+    db.set('note:1', { title: 'Hello world' })
+
+    // Read once
+    const note = await db.get('note:1')
+
+    // Subscribe to live updates
+    db.subscribe('note:1', (value) => {
+      console.log('note updated:', value)
+    })
+    ```
+  </Tab>
+</Tabs>
+
+### Test offline sync
+
+Open two browser windows. Type in one — changes appear in the other instantly.
+
+Click **✈️ Go Offline** in one window, make changes, then **⚡ Go Online** — nothing is lost.
+
+</Steps>
+
+<Callout type="success">
+  You're up and running! Next: [deploy the relay to production →](/guides/self-hosting-relay)
+</Callout>

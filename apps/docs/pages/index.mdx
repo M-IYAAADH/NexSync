@@ -1,0 +1,54 @@
+---
+title: Synclite
+---
+
+import { Callout, Cards, Card } from 'nextra/components'
+
+# Synclite
+
+**Offline-first sync for any app.** Install one package, get instant local writes, automatic conflict resolution, and real-time sync — without thinking about network state.
+
+```bash
+npm install @synclite/core
+```
+
+```typescript
+import { Synclite } from '@synclite/core'
+
+const db = new Synclite({ relay: 'wss://relay.example.com' })
+db.set('note:1', { title: 'Hello' })  // instant locally, syncs automatically
+```
+
+That's it. Works offline. Syncs on reconnect. No conflicts to resolve manually.
+
+<Callout type="info">
+  **Try the live demo** → open two browser windows at [demo.synclite.dev](https://demo.synclite.dev) and watch changes sync in real time.
+</Callout>
+
+## Why Synclite?
+
+| | Synclite | Firebase | Supabase | DIY WebSockets |
+|---|---|---|---|---|
+| Works offline | ✅ | ⚠️ Limited | ❌ | ❌ |
+| Conflict resolution | ✅ Automatic | ⚠️ Manual | ❌ | ❌ |
+| Self-hostable | ✅ | ❌ | ✅ | ✅ |
+| Bundle size | ~30kb | ~150kb | ~50kb | 0 (but you build it) |
+| React hooks | ✅ | ✅ | ✅ | ❌ |
+| Vue composables | ✅ | ❌ | ❌ | ❌ |
+| React Native | ✅ | ✅ | ⚠️ | ❌ |
+
+## Features
+
+- **Instant local writes** — `db.set()` writes to IndexedDB in < 5ms. No spinners.
+- **Automatic sync** — Changes flow to all connected clients via a WebSocket relay.
+- **Offline queue** — Writes queue locally when offline and flush on reconnect.
+- **LWW conflict resolution** — Last-Write-Wins with Lamport timestamps. Delete always wins.
+- **Self-hostable relay** — One Docker command. Your data stays on your infra.
+- **Framework adapters** — React, Vue 3, React Native. Vanilla JS works too.
+
+<Cards>
+  <Card title="Quick Start →" href="/getting-started/quick-start" />
+  <Card title="How It Works →" href="/getting-started/how-it-works" />
+  <Card title="React Guide →" href="/guides/react" />
+  <Card title="API Reference →" href="/api-reference/core" />
+</Cards>

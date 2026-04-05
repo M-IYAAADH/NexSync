@@ -1,0 +1,55 @@
+---
+title: '@synclite/react'
+---
+
+# @synclite/react
+
+React 18+ hooks and provider for Synclite.
+
+## `<SyncliteProvider>`
+
+```typescript
+type SyncliteProviderProps = SyncliteConfig & { children: React.ReactNode }
+```
+
+Wrap your app (or a subtree) to make Synclite available via hooks.
+
+```tsx
+<SyncliteProvider relay="wss://relay.example.com" appId="my-app">
+  <App />
+</SyncliteProvider>
+```
+
+Multiple providers are supported — each creates an isolated Synclite instance.
+
+## `useSynclite()`
+
+```typescript
+function useSynclite(): Synclite
+```
+
+Access the raw `Synclite` instance for writes and subscriptions.
+
+## `useValue(key)`
+
+```typescript
+function useValue(key: string): Record<string, unknown> | null
+```
+
+Subscribe to a single key. Returns `null` until a value is set.
+
+## `useQuery(prefix)`
+
+```typescript
+function useQuery(prefix: string): Record<string, Record<string, unknown>>
+```
+
+Subscribe to all keys under a prefix. Returns an empty object initially.
+
+## `useStatus()`
+
+```typescript
+function useStatus(): 'connecting' | 'connected' | 'offline' | 'syncing'
+```
+
+Track the current relay connection status.

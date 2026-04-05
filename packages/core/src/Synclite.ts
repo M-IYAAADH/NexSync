@@ -48,6 +48,7 @@ export class Synclite extends EventEmitter<SyncliteEvents> {
     relay?: string
     userId?: string
     token?: string
+    storeInstance?: import('./types.js').LocalStore
   }
 
   private store!: LocalStore
@@ -76,6 +77,7 @@ export class Synclite extends EventEmitter<SyncliteEvents> {
       ...(config.relay !== undefined && { relay: config.relay }),
       ...(config.userId !== undefined && { userId: config.userId }),
       ...(config.token !== undefined && { token: config.token }),
+      ...(config.storeInstance !== undefined && { storeInstance: config.storeInstance }),
     }
 
     this.appId = this.config.appId
@@ -244,10 +246,10 @@ export class Synclite extends EventEmitter<SyncliteEvents> {
   // ─── Internals ─────────────────────────────────────────────────────────────
 
   private initStore(): void {
-    // In a real browser/Node env, auto-detect would choose IndexedDB or SQLite.
-    // For now we use Memory (safe in all environments). Adapters can be swapped
-    // by passing storage: 'indexeddb' | 'sqlite' in config.
-    if (this.config.storage === 'memory' || typeof window === 'undefined') {
+    if (this.config.storeInstance !== undefined) {
+      // Caller-supplied store — used by react-native (AsyncStorage) and tests
+      this.store = this.config.storeInstance
+    } else if (this.config.storage === 'memory' || typeof window === 'undefined') {
       this.store = new MemoryStore()
     } else {
       // IndexedDB — lazily imported to avoid bundling in Node

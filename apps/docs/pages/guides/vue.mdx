@@ -1,0 +1,92 @@
+---
+title: Vue Guide
+---
+
+# Vue Guide
+
+`@synclite/vue` provides Vue 3 composables that mirror the React hooks API.
+
+## Installation
+
+```bash
+npm install @synclite/core @synclite/vue
+```
+
+## Setup
+
+Install the plugin in your `main.ts`:
+
+```ts
+import { createApp } from 'vue'
+import { createSynclite } from '@synclite/vue'
+import App from './App.vue'
+
+createApp(App)
+  .use(createSynclite({
+    relay: 'wss://relay.example.com',
+    appId: 'my-app',
+  }))
+  .mount('#app')
+```
+
+Or set up inside a root component (useful for subtrees):
+
+```vue
+<script setup lang="ts">
+import { useSyncliteSetup } from '@synclite/vue'
+
+useSyncliteSetup({ relay: 'wss://relay.example.com', appId: 'my-app' })
+</script>
+```
+
+## Composables
+
+### `useValue(key)`
+
+```vue
+<script setup lang="ts">
+import { useSynclite, useValue } from '@synclite/vue'
+
+const db = useSynclite()
+const note = useValue('note:1') // Ref<Record<string, unknown> | null>
+</script>
+
+<template>
+  <input
+    :value="String(note?.title ?? '')"
+    @input="db.set('note:1', { title: ($event.target as HTMLInputElement).value })"
+  />
+</template>
+```
+
+### `useQuery(prefix)`
+
+```vue
+<script setup lang="ts">
+import { useQuery } from '@synclite/vue'
+
+const notes = useQuery('note:') // Ref<Record<string, Record<string, unknown>>>
+</script>
+
+<template>
+  <ul>
+    <li v-for="(note, key) in notes" :key="key">
+      {{ note.title }}
+    </li>
+  </ul>
+</template>
+```
+
+### `useStatus()`
+
+```vue
+<script setup lang="ts">
+import { useStatus } from '@synclite/vue'
+
+const status = useStatus() // Ref<'connecting' | 'connected' | 'offline' | 'syncing'>
+</script>
+
+<template>
+  <span :class="status">{{ status }}</span>
+</template>
+```

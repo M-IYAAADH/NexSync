@@ -1,0 +1,158 @@
+---
+title: React Guide
+---
+
+import { Callout } from 'nextra/components'
+
+# React Guide
+
+`@synclite/react` wraps `@synclite/core` with React hooks that feel native to React developers.
+
+## Installation
+
+```bash
+npm install @synclite/core @synclite/react
+```
+
+## Setup
+
+Wrap your root component (or a subtree) with `SyncliteProvider`:
+
+```tsx
+import { SyncliteProvider } from '@synclite/react'
+
+export default function App() {
+  return (
+    <SyncliteProvider
+      relay="wss://relay.example.com"
+      appId="my-app"
+      userId="user-123"    // optional
+      token="jwt-token"    // optional
+      debug={false}
+    >
+      <MyApp />
+    </SyncliteProvider>
+  )
+}
+```
+
+<Callout>
+  Each `SyncliteProvider` creates its own Synclite instance. For multi-tenant apps or isolated panels, render multiple providers with different `appId`s.
+</Callout>
+
+## Hooks
+
+### `useValue(key)`
+
+Returns the current value of a key. Re-renders whenever it changes.
+
+```tsx
+function NoteTitle({ id }: { id: string }) {
+  const note = useValue(`note:${id}`)
+  // note is Record<string, unknown> | null
+
+  if (!note) return <span>Loading…</span>
+  return <h1>{String(note.title)}</h1>
+}
+```
+
+### `useQuery(prefix)`
+
+Returns all key-value pairs matching a prefix. Stays in sync with any changes.
+
+```tsx
+function NoteList() {
+  const notes = useQuery('note:')
+  // notes is Record<string, Record<string, unknown>>
+
+  return (
+    <ul>
+      {Object.entries(notes).map(([key, note]) => (
+        <li key={key}>{String(note.title)}</li>
+      ))}
+    </ul>
+  )
+}
+```
+
+### `useStatus()`
+
+Returns the current connection status.
+
+```tsx
+function ConnectionBadge() {
+  const status = useStatus()
+  // 'connecting' | 'connected' | 'offline' | 'syncing'
+
+  return <span className={status}>{status}</span>
+}
+```
+
+### `useSynclite()`
+
+Access the raw `Synclite` instance for writes and advanced use.
+
+```tsx
+function NoteEditor({ id }: { id: string }) {
+  const db = useSynclite()
+  const note = useValue(`note:${id}`)
+
+  return (
+    <textarea
+      value={String(note?.body ?? '')}
+      onChange={(e) => db.set(`note:${id}`, { body: e.target.value })}
+    />
+  )
+}
+```
+
+## Complete Example
+
+```tsx
+import { SyncliteProvider, useSynclite, useValue, useQuery, useStatus } from '@synclite/react'
+
+function App() {
+  return (
+    <SyncliteProvider relay="wss://relay.example.com" appId="notes">
+      <StatusBar />
+      <NoteList />
+    </SyncliteProvider>
+  )
+}
+
+function StatusBar() {
+  const status = useStatus()
+  return <div>Status: {status}</div>
+}
+
+function NoteList() {
+  const db = useSynclite()
+  const notes = useQuery('note:')
+
+  function addNote() {
+    const id = crypto.randomUUID()
+    db.set(`note:${id}`, { title: 'New note', body: '' })
+  }
+
+  return (
+    <div>
+      <button onClick={addNote}>Add note</button>
+      {Object.entries(notes).map(([key, note]) => (
+        <NoteEditor key={key} id={key} />
+      ))}
+    </div>
+  )
+}
+
+function NoteEditor({ id }: { id: string }) {
+  const db = useSynclite()
+  const note = useValue(id)
+
+  return (
+    <input
+      value={String(note?.title ?? '')}
+      onChange={(e) => db.set(id, { ...note, title: e.target.value })}
+    />
+  )
+}
+```
