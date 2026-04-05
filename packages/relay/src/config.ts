@@ -23,5 +23,6 @@ export function loadConfig(): RelayConfig {
     maxPayloadBytes: parseBytes(process.env['MAX_PAYLOAD_SIZE'] ?? '1mb'),
     logLevel: (process.env['LOG_LEVEL'] ?? 'info') as RelayConfig['logLevel'],
     corsOrigins: process.env['CORS_ORIGINS'] ?? '*',
+    maxOpsPerSecond: parseInt(process.env['MAX_OPS_PER_SECOND'] ?? '100', 10),
   }
 }

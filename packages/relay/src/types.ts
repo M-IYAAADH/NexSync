@@ -42,4 +42,5 @@ export type RelayConfig = {
   maxPayloadBytes: number
   logLevel: 'debug' | 'info' | 'warn' | 'error'
   corsOrigins: string
+  maxOpsPerSecond: number
 }

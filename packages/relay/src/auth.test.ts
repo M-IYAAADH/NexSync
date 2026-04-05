@@ -12,6 +12,7 @@ function config(overrides: Partial<RelayConfig> = {}): RelayConfig {
     maxPayloadBytes: 1_048_576,
     logLevel: 'error',
     corsOrigins: '*',
+    maxOpsPerSecond: 100,
     ...overrides,
   }
 }

@@ -6,8 +6,7 @@ import { verifyToken } from './auth.js'
 import { Logger } from './logger.js'
 import type { RelayConfig, ConnectedClient, ClientMessage, RelayMessage, Operation } from './types.js'
 
-// Rate limiting: max ops per second per connection
-const MAX_OPS_PER_SECOND = 100
+// Max ops per sync request
 const MAX_OPS_PER_SYNC = 10_000
 
 /**
@@ -22,6 +21,7 @@ export class RelayServer {
 
   // Rate limiting: connectionId → { count, resetAt }
   private rateLimits = new Map<string, { count: number; resetAt: number }>()
+  private rateLimitCleanupInterval: ReturnType<typeof setInterval>
 
   constructor(private readonly config: RelayConfig) {
     this.log = new Logger(config.logLevel)
@@ -43,6 +43,16 @@ export class RelayServer {
     this.wss.on('listening', () => {
       this.log.info(`relay listening on port ${config.port}`)
     })
+
+    // Cleanup stale rate limit entries every 60 seconds
+    this.rateLimitCleanupInterval = setInterval(() => {
+      const now = Date.now()
+      for (const [id, limit] of this.rateLimits) {
+        if (limit.resetAt < now) {
+          this.rateLimits.delete(id)
+        }
+      }
+    }, 60_000)
   }
 
   private handleConnection(connectionId: string, ws: WebSocket): void {
@@ -165,7 +175,8 @@ export class RelayServer {
     msg: Extract<ClientMessage, { type: 'auth' }>,
     onAuthenticated: () => void,
   ): Promise<void> {
-    const result = await verifyToken(msg.token, msg.appId, this.config)
+    const deviceId = randomUUID()
+    const result = await verifyToken(msg.token, msg.appId, this.config, deviceId)
 
     if (!result.ok) {
       this.log.warn(`auth failed for ${connectionId}: ${result.reason}`)
@@ -173,8 +184,6 @@ export class RelayServer {
       ws.close()
       return
     }
-
-    const deviceId = randomUUID()
     const client: ConnectedClient = {
       id: connectionId,
       appId: msg.appId,
@@ -201,7 +210,7 @@ export class RelayServer {
 
     limit.count++
     this.rateLimits.set(connectionId, limit)
-    return limit.count <= MAX_OPS_PER_SECOND
+    return limit.count <= this.config.maxOpsPerSecond
   }
 
   private send(ws: WebSocket, msg: RelayMessage): void {
@@ -212,6 +221,7 @@ export class RelayServer {
 
   /** Gracefully shut down the relay. */
   close(): Promise<void> {
+    clearInterval(this.rateLimitCleanupInterval)
     return new Promise((resolve) => {
       this.wss.close(() => {
         this.db.close()

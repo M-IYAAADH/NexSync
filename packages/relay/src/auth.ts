@@ -17,6 +17,7 @@ export async function verifyToken(
   token: string | undefined,
   appId: string,
   config: RelayConfig,
+  deviceId?: string,
 ): Promise<AuthResult> {
   // Dev mode — no auth configured
   if (!config.jwtSecret && !config.authWebhook) {
@@ -40,11 +41,15 @@ export async function verifyToken(
   // Webhook verification
   if (config.authWebhook) {
     try {
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 5000)
       const res = await fetch(config.authWebhook, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token, appId }),
+        body: JSON.stringify({ token, appId, ...(deviceId !== undefined && { deviceId }) }),
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
       if (!res.ok) {
         return { ok: false, reason: `Auth webhook returned ${res.status}` }
       }
