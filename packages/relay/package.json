@@ -10,8 +10,8 @@
   },
   "scripts": {
     "build": "tsc --project tsconfig.json",
-    "start": "node dist/server.js",
-    "dev": "node --watch dist/server.js",
+    "start": "node dist/cli.js",
+    "dev": "node --watch dist/cli.js",
     "test": "vitest run",
     "typecheck": "tsc --noEmit",
     "lint": "eslint src --ext .ts",
