@@ -36,7 +36,6 @@ export class RelayServer {
     this.wss = new WebSocketServer({
       server: this.httpServer,
       maxPayload: config.maxPayloadBytes,
-      perMessageDeflate: false,
     })
 
     this.wss.on('connection', (ws, req) => {
