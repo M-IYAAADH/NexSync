@@ -189,15 +189,24 @@ export class Synclite extends EventEmitter<SyncliteEvents> {
 
   /**
    * Subscribe to connection status changes.
+   * Fires with 'connected', 'offline', or 'syncing' as the relay state changes.
    */
   onStatusChange(callback: (status: SyncStatus) => void): Unsubscribe {
-    const handler = (status: SyncStatus): void => callback(status)
-    // Use a wrapper to attach/detach via the internal status change mechanism
-    this.on('connected', () => handler('connected'))
-    this.on('disconnected', () => handler('offline'))
+    const onConnected = () => callback('connected')
+    const onDisconnected = () => callback('offline')
+    const onSyncStart = () => callback('syncing')
+    const onSyncComplete = () => callback('connected')
+
+    this.on('connected', onConnected)
+    this.on('disconnected', onDisconnected)
+    this.on('sync:start', onSyncStart)
+    this.on('sync:complete', onSyncComplete)
+
     return () => {
-      this.off('connected', () => handler('connected'))
-      this.off('disconnected', () => handler('offline'))
+      this.off('connected', onConnected)
+      this.off('disconnected', onDisconnected)
+      this.off('sync:start', onSyncStart)
+      this.off('sync:complete', onSyncComplete)
     }
   }
 
